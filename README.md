@@ -2,8 +2,6 @@
 
 ## TCL WORKSHOP: FROM INTRODUCTION TO ADVANCED SCRIPTING TECHNIQUES IN VLSI DESIGN AND SYNTHESIS
 
-![Hello!](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/a97d6a5e-5ec8-4144-8b3a-8f79a22551a2)
-
 ## What is tcl?
   TCL, which stands for Tool Command Language, is a versatile and dynamic scripting language. With its clear and concise syntax, TCL is widely used in various domains, including software development, network administration, and embedded systems. It offers a rich set of built-in commands and supports seamless integration with C/C++ code. TCL's flexibility and ease of use make it an excellent choice for both beginners and experienced programmers seeking efficient and powerful scripting capabilities.
 
@@ -216,6 +214,100 @@ puts "input_port_start = $input_start"
 puts "output_port_start = $output_start"
 ```
 ![SDC_Dump](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/956a1603-806b-4007-a489-316fcf4d9285)
+
+## DAY-3
+
+____As said in Day 2, We have to categorize all ports as inputs,ouputs,clocks and process them sepeartely____
+
+#### 1. CLOCKS
+###### Clock latency and transition constraints
+To get all the parameters under "CLOCKS" we need row and column number and traverse using them.
+from prev code , we know that row number for clocks = ```$clock_start``` and column number is ```$clock_start_column```
+TO access them :
+```
+set clock_early_rise_delay_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] early_rise_delay] 0] 0]
+set clock_early_fall_delay_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] early_fall_delay] 0] 0]
+set clock_late_rise_delay_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] late_rise_delay] 0] 0]
+set clock_late_fall_delay_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] late_fall_delay] 0] 0]
+set clock_early_rise_slew_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] early_rise_slew] 0] 0]
+set clock_early_fall_slew_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] early_fall_slew] 0] 0]
+set clock_late_rise_slew_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] late_rise_slew] 0] 0]
+set clock_late_fall_slew_start [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] late_fall_slew] 0] 0]
+set clock_period [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] frequency] 0] 0]
+set clock_duty_cycle [lindex [lindex [constraints search rect $clock_start_column $clock_start $col2 [expr {$input_start-1}] duty_cycle] 0] 0]
+```
+![clock_constraint_col_nums](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/4770ec54-3241-4915-b4ba-f68c40a0acf4)
+
+____Now update te values under these colums for each row into SDC file____
+```set sdc_file [open $OutputDirectory/$DesignName.sdc "w"]
+set i [expr {$clock_start+1}]
+set end_of_clock_ports [expr {$input_start-1}]
+puts "\nInfo : SDC : Working on clock constrains................"
+while {$i < $end_of_clock_ports} {
+        puts -nonewline $sdc_file "\ncreate_clock -name [constraints get cell $clock_start $i]_chips -period [constraints get cell $clock_period $i] -waveform \{0 [expr {[constraints get cell $clock_period $i]*[constraints get cell $clock_duty_cycle $i]/100}]\} \[get_ports [constraints get cell $clock_start $i]\]"
+        puts -nonewline $sdc_file "\nset_clock_latency  -source -early -rise [constraints get cell $clock_early_rise_delay_start $i] \[get_ports [constraints get cell 0 $i]\]"
+ ###Perform the above command for all the parameters in that row
+        set i [expr {$i+1}]
+}
+```
+![clocks_scd_updated](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/b83a1dd1-91d8-4c18-9ea8-195e03053e61)
+
+#### 2.Inputs
+Clock ports are standard ports but the ports under inputports are not standard ports as some are single bit and some are multi bit buses.SO 
+- set variables for all the parameters
+- indicate if its a bus by appending a '*' in front of the port. we can do this by
+    1. get all the netlist files in a serial format ```set netlist [glob -dir $NetlistDirectory *.v] ```
+    2. open a temporary file under write mode ```set tmp_file [open /tmp/1 w] ```
+    3. now traverse for input ports through all the files and each line in the file until EOF and End of all files
+    4. Since we get multiple declarations of the name_to_serach in inputs and outputs, we can split each finding using ';' as a delimiter use lindex[0] to get the first declaration
+    5. if there are multiple spaces,remove them and replace with single space as it makes a unique pattern and makes it easy to filter
+    6. if number of that unique pattern count is < 2 - its a single bit wire else its a multibit bus
+    7. Similar to clock ports ,send the input ports data to SDC file
+```
+set netlist [glob -dir $NetlistDirectory *.v]
+        set tmp_file [open /tmp/1 w]
+        foreach fyle $netlist {
+                set fd [open $fyle]
+                while {[gets $fd line] != -1} {
+                        set pattern1 " [constraints get cell 0 $j];"
+                        if {[regexp -all -- $pattern1 $line]} {
+                                set pattern2 [lindex [split $line ";"] 0]
+                                if {[regexp -all {input} [lindex [split $pattern2 "\S+"] 0]]} {
+                                        set s1 "[lindex [split $pattern2 "\S+"] 0] [lindex [split $pattern2 "\S+"] 1] [lindex [split $pattern2 "\S+"] 2]"
+                                        puts -nonewline $tmp_file "\n[regsub -all {\s+} $s1 " "]"
+                                }
+                        }
+                }
+                close $fd
+        }
+close $tmp_file
+
+set tmp_file [open /tmp/1 r]
+set tmp2_file [open /tmp/2 w]
+
+puts -nonewline $tmp2_file "[join [lsort -unique [split [read $tmp_file] \n]] \n]"
+
+close $tmp_file
+close $tmp2_file
+
+set tmp2_file [open /tmp/2 r]
+set count [llength [read $tmp2_file]]
+
+
+if {$count > 2} {
+        set input_ports [concat [constraints get cell 0 $j]*]
+} else {
+        set input_ports [constraints get cell 0 $j]
+}
+```
+![input_cmd](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/85b4beb3-6ca7-4e4b-9fea-604211cfa2f0)
+
+#### SDC Contents W.R.T Input ports
+![input_sdc](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/e360f2dc-eaba-4fbe-83b8-710fbc849dab)
+
+
+
+
 
 
 
