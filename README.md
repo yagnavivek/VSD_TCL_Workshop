@@ -15,12 +15,12 @@
 4. Generate output report
 
 # Links For Easy Navigation:
-1. [DAY-1](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-1)
-2. [DAY-2](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-2)
-3. [DAY-3](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-3)
-4. [DAY-4](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-4)
-5. [DAY-5](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-5)
-6. [Code Explaination](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#code-explaination)
+1. [DAY-1](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#day-1)
+2. [DAY-2](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#day-2)
+3. [DAY-3](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#day-3)
+4. [DAY-4](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#day-4)
+5. [DAY-5](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#day-5)
+6. [Code Explaination](https://github.com/yagnavivek/VSD_TCL_Workshop/blob/main/README.md#code-explaination)
 
 ## DAY-1
 
