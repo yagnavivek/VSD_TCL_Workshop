@@ -14,6 +14,14 @@
 3. Convert SDC file into Opentimer readable format (format-o) and pass format-y and format-o files to the opentimer timing tool
 4. Generate output report
 
+# Links For Easy Navigation:
+1. [DAY-1](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-1)
+2. [DAY-2](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-2)
+3. [DAY-3](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-3)
+4. [DAY-4](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-4)
+5. [DAY-5](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#day-5)
+6. [Code Explaination](https://github.com/yagnavivek/VSD_TCL_Workshop/edit/main/README.md#code-explaination)
+
 ## DAY-1
 
 ___Before Executing the command in terminal dont forget to provide the permission to it using___
@@ -304,6 +312,43 @@ if {$count > 2} {
 
 #### SDC Contents W.R.T Input ports
 ![input_sdc](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/e360f2dc-eaba-4fbe-83b8-710fbc849dab)
+
+## DAY-4
+
+#### YOSYS (Yosys Open SYnthesis Suite)
+YOSYS is an open-source RTL synthesis and formal verification framework for digital circuits. It takes RTL descriptions (e.g., Verilog) as input and performs synthesis to generate a gate-level netlist. YOSYS supports technology mapping, optimization, and formal verification. It has a scripting interface, integrates with other EDA tools, and is widely used in academia and industry for digital design tasks.
+
+### Tasks:
+- Checking the Hierarchy
+- Error handling
+- Synthesize netlist
+
+#### 1. Checking the hierarchy 
+
+##### case 1 : All the referenced modules are interlinked properly and the hierarchy is properly defined - Hierarchy PASS
+![hierarchy_pass](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/eae77ef1-8cc2-41ae-9948-cde1205679b7)
+
+##### case 2 : Hierarchy FAIL
+![hier_fail_new](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/d3842e8f-fdb4-43c4-916e-26bd9d4f50fe)
+
+##### Log file message regarding the error
+![hierarchy_fail_log](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/b4e12d96-4bec-45af-824c-7eba725aca74)
+
+#### 2. Completing the synthesis
+![synthesis_completed](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/79833cbd-f4f7-43eb-8540-0d10eab7d33b)
+
+#### Synthesized netlist
+![synthesized](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/ea76cc5f-041b-4038-bf92-a00f9ad3a12a)
+
+## DAY-5
+
+## Code Explaination
+
+
+
+
+
+
 
 
 
