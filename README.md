@@ -490,6 +490,26 @@ proc read_verilog arg1 {
 - This proc enters the puts statement followed by the netlist file
 
 5. read_sdc.proc
+For this particular proc ,we will make subdivisions of it and look into the functioning
+
+In the SDC file that we generated previously, it had square brackets and additional symbols which the Opentimer tool doesnt recognize. So we use this proc to arrive at a final file format that Opentimer can Use from SDC File
+
+#### 1.Remove the square brackets
+```
+proc read_sdc {arg1} {
+set sdc_dirname [file dirname $arg1]
+set sdc_filename [lindex [split [file tail $arg1] .] 0 ]
+set sdc [open $arg1 r]
+set tmp_file [open /tmp/1 w]
+
+puts -nonewline $tmp_file [string map {"\[" "" "\]" " "} [read $sdc]]
+close $tmp_file
+```
+#### Original SDC File
+![original_sdc_file](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/b911921d-27cb-4d0e-8f01-9028c94c0f7d)
+
+#### The same file after excecuting the above proc
+![brackets_removed](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/64c661dd-4247-4cf8-9216-6b54112ffbf8)
 
 ## Code Explaination
 
