@@ -341,6 +341,155 @@ YOSYS is an open-source RTL synthesis and formal verification framework for digi
 ![synthesized](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/ea76cc5f-041b-4038-bf92-a00f9ad3a12a)
 
 ## DAY-5
+### Objective : Generate The Pre-Layout Timing Results
+
+By the end of Day-4 we had synthesized the netlist and we also got an SDC file but inorder to provide it to Opentimer tool, we have to remove out some redundant symbols and lines So that other tool can understand this RAW file
+
+- In the synthesized file
+    1. Remove the *s
+    2. Remove backslashes
+- In the SDC file
+    1. Remove brackets
+    2. Expand buses
+- write a .conf file
+- get the count of all violations and their values
+- generate the report
+
+#### 1. Remove the *s and backslashes
+```
+set fileid [open /tmp/1 "w"]
+puts -nonewline $fileid [exec grep -v -w "*" $OutputDirectory/$DesignName.synth.v]
+#grep  -v -w "*" gets alll the instances with * in it so that we can remove them as they arent understood by Opentimer
+close $fileid
+
+set output [open $OutputDirectory/$DesignName.final.synth.v "w"]
+
+set filename "/tmp/1"
+set fid [open $filename r]
+while {[gets $fid line] != -1} {
+        puts -nonewline $output [string map {"\\" ""} $line]
+        puts -nonewline $output "\n"
+}
+
+close $fid
+close $output
+
+puts "\nInfo : Please find the final synthesized netlist for $DesignName at below path. You cann use this netlist for STA or PNR"
+puts "$OutputDirectory/$DesignName.final.synth.v"
+```
+
+### Original synthesized file with *s and \s present
+![yes_starsnbacks](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/33176b70-8063-4050-ab01-d05515d6d95b)
+### The same file after removing them using the above code
+![nobacks](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/a2384c32-5f35-479f-83a8-4c6dfadb7bc0)
+
+Now we have to Perform Static Timing Analysis using OpenTimer and for that, We have to modify the SDC file
+To do all these, We use PROCS
+
+# PROCS
+Procs are an external tcl file that perform an operation that is specified in it when sourced to the main tcl file. It works similar to how a function works in Python Programming. An example of a proc would be read_liberty where options like -lib, -late, -early and /or can be passed as an arguememt to the proc. Once the proc is sourced in the main tcl script the read_liberty command will be executed by referring to the proc and mapping the arguements to the external tcl script(proc script). At the end of the proc command, the main tcl script will be left with the output of the proc.
+
+- So Procs basically allows you to create your own commands
+
+<img src = "https://github.com/Visruat/VSD-TCL/assets/125136551/a4d8166c-5026-4e26-b7de-499626926123" width ="300" height ="300"> <img src = "https://github.com/Visruat/VSD-TCL/assets/125136551/c33f56bb-99fe-42f5-ba1f-d21e86795f96" width ="600" height ="300">
+
+### Here I will be creating a proc to source other procs in my main tcl file and its name is proc_help
+```
+proc proc_help {args} {
+        if {$args != "-prochelp"} {
+                puts "Invalid Command.... use : -prochelp"
+        } else {
+
+                source /home/vsduser/vsdsynth/procs/read_lib.proc
+                source /home/vsduser/vsdsynth/procs/read_sdc.proc
+                source /home/vsduser/vsdsynth/procs/read_verilog.proc
+                source /home/vsduser/vsdsynth/procs/reopenStdout.proc
+                source /home/vsduser/vsdsynth/procs/set_num_threads.proc
+        }
+}
+```
+As you can see there are 5 procs that i have used to be sourced in main tcl file 
+Lets see what each one does
+
+1. reopenStdout.proc
+```
+proc reopenStdout {file} {
+    close stdout
+    open $file w
+}
+```
+The reopenStdout proc is a simple proc which is used to close the main terminal stdout and open a file in write mode
+
+2. set_num_threads
+```
+proc set_multi_cpu_usage {args} {
+        array set options {-localCpu <num_of_threads> -help "" }
+        #foreach {switch value} [array get options] {
+        #puts "Option $switch is $value"
+        #}
+        while {[llength $args]} {
+        #puts "llength is [llength $args]"
+        #puts "lindex 0 of \"$args\" is [lindex $args 0]"
+                switch -glob -- [lindex $args 0] {
+                -localCpu {
+                           #puts "old args is $args"
+                           set args [lassign $args - options(-localCpu)]
+                           #puts "new args is \"$args\""
+                           puts "set_num_threads $options(-localCpu)"
+                          }
+                -help {
+                           #puts "old args is $args"
+                           set args [lassign $args - options(-help) ]
+                           #puts "new args is \"$args\""
+                           puts "Usage: set_multi_cpu_usage -localCpu <num_of_threads>"
+                      }
+                }
+        }
+}
+```
+- "array set options { -localCpu <num_of_threads> -help "" }" --> set an array named options. options is a list of key-value pairs, where each key is a string representing the element's name, and each value is the corresponding value to assign to that element. eg, "-localCpu is linked to <num_of_threads>" and "-help" is linked to "".
+- "switch -glob -- [lindex $args 0]" --> globbing is used to get the term inside [] so that switch can map to the corresponding case. Takes only the ket of the key-value pair 
+- "set args [lassign $args - options(-localCpu)]" --> assigning new value to args after removing the array element which was used to enter the loop
+
+3. read_lib.proc
+
+```
+proc read_lib args {
+	array set options {-late <late_lib_path> -early <early_lib_path> -help ""}
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+		-late {
+			set args [lassign $args - options(-late) ]
+			puts "set_late_celllib_fpath $options(-late)"
+		      }
+		-early {
+			set args [lassign $args - options(-early) ]
+			puts "set_early_celllib_fpath $options(-early)"
+		       }
+		-help {
+			set args [lassign $args - options(-help) ]
+			puts "Usage: read_lib -late <late_lib_path> -early <early_lib_path>"
+			puts "-late <provide late library path>"
+			puts "-early <provide early library path>"
+		      }	
+		default break
+		}
+	}
+}
+```
+- Similar to the set_num_threads proc , the read_lib proc will have 3 options i.e _late early and help_
+- the proc ensures to read the late and early lib file for STA and write it in a file
+
+4. read_verilog.proc
+
+```
+proc read_verilog arg1 {
+  puts "set_verilog_fpath $arg1"
+}
+```
+- This proc enters the puts statement followed by the netlist file
+
+5. read_sdc.proc
 
 ## Code Explaination
 
