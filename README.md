@@ -383,6 +383,10 @@ puts "$OutputDirectory/$DesignName.final.synth.v"
 ### The same file after removing them using the above code
 ![nobacks](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/a2384c32-5f35-479f-83a8-4c6dfadb7bc0)
 
+#### Number of lines in synthesized file before and after this step of optimisation
+![total_lines_in_synth](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/f01bcffa-f0a1-4036-ab05-6dd28cd80a4c)
+![total_lins_in_final_synth](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/d5cece74-471a-47ad-8b15-fac01a539de6)
+
 Now we have to Perform Static Timing Analysis using OpenTimer and for that, We have to modify the SDC file
 To do all these, We use PROCS
 
@@ -508,8 +512,146 @@ close $tmp_file
 #### Original SDC File
 ![original_sdc_file](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/b911921d-27cb-4d0e-8f01-9028c94c0f7d)
 
-#### The same file after excecuting the above proc
+#### The same file after excecuting the above sub-proc 
 ![brackets_removed](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/64c661dd-4247-4cf8-9216-6b54112ffbf8)
+
+#### 2. split the lines based on newline charachter and create clock constraints
+```
+set tmp_file [open /tmp/1 r]
+set timing_file [open /tmp/3 w]
+set lines [split [read $tmp_file] "\n"]
+set find_clocks [lsearch -all -inline $lines "create_clock*"]
+foreach elem $find_clocks {
+        set clock_port_name [lindex $elem [expr {[lsearch $elem "get_ports"]+1}]]
+        set clock_period [lindex $elem [expr {[lsearch $elem "-period"]+1}]]
+        set duty_cycle [expr {100 - [expr {[lindex [lindex $elem [expr {[lsearch $elem "-waveform"]+1}]] 1]*100/$clock_period}]}]
+        puts $timing_file "clock $clock_port_name $clock_period $duty_cycle"
+        }
+close $tmp_file
+```
+![sdc_nobracket_nolines](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/fc919b58-170d-486d-9795-ceb824e6d1cf)
+
+#### 3. Create clock latency and transition constraints
+```
+#-----------------------------------------------------------------------------#
+#----------------converting set_clock_latency constraints---------------------#
+#-----------------------------------------------------------------------------#
+
+set find_keyword [lsearch -all -inline $lines "set_clock_latency*"]
+set tmp2_file [open /tmp/2 w]
+set new_port_name ""
+foreach elem $find_keyword {
+        set port_name [lindex $elem [expr {[lsearch $elem "get_clocks"]+1}]]
+        if {![string match $new_port_name $port_name]} {
+                set new_port_name $port_name
+                set delays_list [lsearch -all -inline $find_keyword [join [list "*" " " $port_name " " "*"] ""]]
+                set delay_value ""
+                foreach new_elem $delays_list {
+                        set port_index [lsearch $new_elem "get_clocks"]
+                        lappend delay_value [lindex $new_elem [expr {$port_index-1}]]
+                }
+                puts -nonewline $tmp2_file "\nat $port_name $delay_value"
+        }
+}
+
+close $tmp2_file
+set tmp2_file [open /tmp/2 r]
+puts -nonewline $timing_file [read $tmp2_file]
+close $tmp2_file
+#-----------------------------------------------------------------------------#
+#----------------converting set_clock_transition constraints------------------#
+#-----------------------------------------------------------------------------#
+
+set find_keyword [lsearch -all -inline $lines "set_clock_transition*"]
+set tmp2_file [open /tmp/2 w]
+set new_port_name ""
+foreach elem $find_keyword {
+        set port_name [lindex $elem [expr {[lsearch $elem "get_clocks"]+1}]]
+        if {![string match $new_port_name $port_name]} {
+                set new_port_name $port_name
+                set delays_list [lsearch -all -inline $find_keyword [join [list "*" " " $port_name " " "*"] ""]]
+                set delay_value ""
+                foreach new_elem $delays_list {
+                        set port_index [lsearch $new_elem "get_clocks"]
+                        lappend delay_value [lindex $new_elem [expr {$port_index-1}]]
+                }
+                puts -nonewline $tmp2_file "\nslew $port_name $delay_value"
+        }
+}
+
+close $tmp2_file
+set tmp2_file [open /tmp/2 r]
+puts -nonewline $timing_file [read $tmp2_file]
+close $tmp2_file
+```
+
+similarly we do for inputs and outputs , you can refer to this proc under resources section
+
+### Final Output file
+The comparision between one step before final one i.e., converting bussed to individual
+![done_till_load_step3](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/19ce0487-1346-4861-9d49-b9e8bd3249a0)
+
+![expanded_bussed_ports](https://github.com/yagnavivek/VSD_TCL_Workshop/assets/93475824/adacf922-0155-494f-a06c-3822377fc90a)
+
+### Creating a .conf file
+```
+
+if {$enable_prelayout_timing == 1} {
+        puts "\nInfo : enable_prelayout_timing is $enable_prelayout_timing.Enabling zero-wire load parasitics.........."
+        set spef_file [open $OutputDirectory/$DesignName.spef w]
+        puts $spef_file "*SPEF \"IEEE 1481-1998\""
+        puts $spef_file "*DESIGN \"$DesignName\""
+        puts $spef_file "*DATE \"Mon Jul 10 06:36:15 2023\""
+        puts $spef_file "*VENDOR \"VLSI System Design\""
+        puts $spef_file "*PROGRAM \"VSD TCL Workshop\""
+        puts $spef_file "*VERSION \"0.0\""
+        puts $spef_file "*DESIGN FLOW \"NETLIST_TYPE_VERILOG\""
+        puts $spef_file "*DIVIDER /"
+        puts $spef_file "*DELIMITER : "
+        puts $spef_file "*BUS_DELIMITER [ ]"
+        puts $spef_file "*T_UNIT 1 PS"
+        puts $spef_file "*C_UNIT 1 FF"
+        puts $spef_file "*R_UNIT 1 KOHM"
+        puts $spef_file "*L_UNIT 1 UH"
+}
+close $spef_file
+
+set conf_file [open $OutputDirectory/$DesignName.conf a]
+# a in above line end indicates append mode
+puts $conf_file "set_spef_fpath $OutputDirectory/$DesignName.spef"
+puts $conf_file "init_timer"
+puts $conf_file "report_timer"
+puts $conf_file "report_wns"
+puts $conf_file "report_tns"
+puts $conf_file "report_worst_paths -numPaths 10000 "
+close $conf_file
+                  
+```
+
+### Script to generate QOR Quality of Results required to determine performance of our design
+one of the prefferred formats for the QOR is horizontal format
+```
+refer to tcl file for this part 
+```
+
+### Formatting to generate the report
+```
+puts "                                          ****PRELAYOUT TIMING RESULTS****                                        "
+set formatStr "%15s %15s %15s %15s %15s %15s %15s %15s %15s"
+
+puts [format $formatStr "----------" "-------" "--------------" "---------" "---------" "--------" "--------" "-------" "-------"]
+puts [format $formatStr "DesignName" "Runtime" "Instance Count" "WNS Setup" "FEP Setup" "WNS Hold" "FEP Hold" "WNS RAT" "FEP RAT"]
+puts [format $formatStr "----------" "-------" "--------------" "---------" "---------" "--------" "--------" "-------" "-------"]
+
+foreach design_name $DesignName runtime $time_elapsed_in_sec instance_count $Instance_count wns_setup $worst_negative_setup_slack fep_setup $number_of_setup_violations wns_hold $worst_negative_hold_slack fep_hold $number_of_hold_violations wns_rat $worst_RAT_slack fep_rat $number_of_output_violations {
+        puts [format $formatStr $design_name $runtime $instance_count $wns_setup $fep_setup $wns_hold $fep_hold $wns_rat $fep_rat]
+}
+
+puts [format $formatStr "----------" "-------" "--------------" "---------" "---------" "--------" "--------" "-------" "-------"]
+puts "\n"
+```
+
+## Final Output
 
 ## Code Explaination
 
