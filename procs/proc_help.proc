@@ -1,0 +1,12 @@
+proc proc_help {args} {
+	if {$args != "-prochelp"} {
+		puts "Invalid Command.... use : -prochelp"
+	} else {
+	
+		source /home/vsduser/vsdsynth/procs/read_lib.proc
+		source /home/vsduser/vsdsynth/procs/read_sdc.proc
+		source /home/vsduser/vsdsynth/procs/read_verilog.proc
+		source /home/vsduser/vsdsynth/procs/reopenStdout.proc
+		source /home/vsduser/vsdsynth/procs/set_num_threads.proc
+	}
+}

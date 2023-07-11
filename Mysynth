@@ -1,0 +1,72 @@
+#!/bin/tcsh -f 
+
+echo 
+echo
+echo "********************     *****               *****     ********************     ********************     ********************"
+echo "********************     *****               *****     ********************     ********************     ********************"
+echo "********************     *****               *****     ********************     ********************     ********************"
+echo "*****                    *****               *****             *****            ******         *****     ******              "
+echo "*****                    *****               *****             *****            ******         *****     ******     	   "
+echo "*****                    *****               *****             *****            ******         *****     ******              "
+echo "*****                    *****               *****             *****            ******         *****     ******              "
+echo "*****                    *************************             *****            ********************     ********************"
+echo "*****                    *************************             *****            ********************     ********************"
+echo "*****                    *************************             *****            ********************     ********************"
+echo "*****                    *****               *****             *****            ******                                 ******"
+echo "*****                    *****               *****             *****            ******                                 ******"
+echo "*****                    *****               *****             *****            ******                                 ******"
+echo "*****                    *****               *****             *****            ******                                 ******"
+echo "********************     *****               *****      ********************    ******                   ********************"
+echo "********************     *****               *****      ********************    ******                   ********************"
+echo "********************     *****               *****      ********************    ******                   ********************"
+echo
+echo "                        Please wait while we provide you the pre-layout timing report with the help                          "
+echo "                                                of Yosys and Opentimer                                                       "
+echo
+echo
+echo " 		      If you have some sugggestions or queries please feel free to mail pesug20ec109@pesu.pes.edu                  "
+echo 
+echo "                                                 Thank you sir @ kunalpgosh                                                  "
+echo
+
+set my_work_dir = 'pwd'
+
+
+###To check if the .csv file is given
+
+if ( $#argv != 1)then
+	echo "Error : Please provide the .csv file as input"
+	exit 1
+endif 
+
+### The user mentioned the file name but its not existing or he needs help with the input arguments
+
+if(! -f $argv[1] || $argv[1] == "--help") then
+	if($argv[1] != "--help") then
+		echo "Error : The file does not exist or check if the name "$argv[1]" is correct. Exiting........"
+		exit 1
+
+	
+	else
+		echo USE_AS :   ./mysynth.tcl \<csv file\>
+		echo 
+		echo The csv \<csv file\> contains 2 columns where the first column  keywords are given below and are case sensitive and the second column is the corresponding path 
+		echo
+		echo \<Design Name\> is the name of the top level module
+		echo
+		echo \<Output Directory\> is the name of the ouput directory where you want to dump the synthesis script, synthesized netlist and timing reports 
+		echo
+		echo \<Netlist Directory\> is the name of the directory where all the RTL netlist are present
+		echo
+		echo \<Early Library Path\> is the file path of the early celllibrary top be used for STA
+		echo
+		echo \<Late Library Path\> is the file path of the late cell library to be used for STA
+		echo
+		echo \<Constraints file\> is the csv file path of the constraints to be used for STA
+		echo
+		exit 1
+	endif
+
+else
+	tclsh my_synth.tcl $argv[1]
+endif
